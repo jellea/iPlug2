@@ -189,7 +189,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdPa
     if (!__SetProcessDpiAwarenessContext)
     {
       HINSTANCE h = LoadLibrary("user32.dll");
-      if (h) *(void **)&__SetProcessDpiAwarenessContext = GetProcAddress(h, "SetProcessDpiAwarenessContext");
+      if (h) *(void **)&__SetProcessDpiAwarenessContext = (void*)GetProcAddress(h, "SetProcessDpiAwarenessContext");
       if (!__SetProcessDpiAwarenessContext)
         *(void **)&__SetProcessDpiAwarenessContext = (void*)(INT_PTR)1;
     }

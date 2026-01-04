@@ -98,9 +98,16 @@ function(_iplug_create_desktop_targets plugin_name formats sources ui_lib resour
       list(APPEND _app_sources "${_rc_file}")
       # Tell RC compiler where to find resources (fonts, images, etc.)
       # The .rc file references files like "Roboto-Regular.ttf" without path
-      set_source_files_properties("${_rc_file}" PROPERTIES
-        COMPILE_FLAGS "/I\"${CMAKE_CURRENT_SOURCE_DIR}/resources/fonts\" /I\"${CMAKE_CURRENT_SOURCE_DIR}/resources/img\" /I\"${CMAKE_CURRENT_SOURCE_DIR}/resources\""
-      )
+      # Use -I for MinGW (windres) and /I for MSVC (rc.exe)
+      if(MINGW)
+        set_source_files_properties("${_rc_file}" PROPERTIES
+          COMPILE_FLAGS "--use-temp-file -I \"${CMAKE_CURRENT_SOURCE_DIR}/resources/fonts\" -I \"${CMAKE_CURRENT_SOURCE_DIR}/resources/img\" -I \"${CMAKE_CURRENT_SOURCE_DIR}/resources\""
+        )
+      else()
+        set_source_files_properties("${_rc_file}" PROPERTIES
+          COMPILE_FLAGS "/I\"${CMAKE_CURRENT_SOURCE_DIR}/resources/fonts\" /I\"${CMAKE_CURRENT_SOURCE_DIR}/resources/img\" /I\"${CMAKE_CURRENT_SOURCE_DIR}/resources\""
+        )
+      endif()
     endif()
     add_executable(${plugin_name}-app ${_app_sources})
     iplug_add_target(${plugin_name}-app PUBLIC
@@ -113,7 +120,22 @@ function(_iplug_create_desktop_targets plugin_name formats sources ui_lib resour
 
   # VST2 (conditional on SDK availability - deprecated)
   if("VST2" IN_LIST formats AND IPLUG2_VST2_SUPPORTED)
-    add_library(${plugin_name}-vst2 MODULE ${sources})
+    set(_vst2_sources ${sources})
+    # Add RC file on Windows for font/image resources
+    set(_rc_file "${CMAKE_CURRENT_SOURCE_DIR}/resources/main.rc")
+    if(WIN32 AND EXISTS "${_rc_file}")
+      list(APPEND _vst2_sources "${_rc_file}")
+      if(MINGW)
+        set_source_files_properties("${_rc_file}" PROPERTIES
+          COMPILE_FLAGS "--use-temp-file -I \"${CMAKE_CURRENT_SOURCE_DIR}/resources/fonts\" -I \"${CMAKE_CURRENT_SOURCE_DIR}/resources/img\" -I \"${CMAKE_CURRENT_SOURCE_DIR}/resources\""
+        )
+      else()
+        set_source_files_properties("${_rc_file}" PROPERTIES
+          COMPILE_FLAGS "/I\"${CMAKE_CURRENT_SOURCE_DIR}/resources/fonts\" /I\"${CMAKE_CURRENT_SOURCE_DIR}/resources/img\" /I\"${CMAKE_CURRENT_SOURCE_DIR}/resources\""
+        )
+      endif()
+    endif()
+    add_library(${plugin_name}-vst2 MODULE ${_vst2_sources})
     iplug_add_target(${plugin_name}-vst2 PUBLIC
       LINK iPlug2::VST2 ${ui_lib} ${base_lib}
     )
@@ -124,7 +146,22 @@ function(_iplug_create_desktop_targets plugin_name formats sources ui_lib resour
 
   # VST3 (always available)
   if("VST3" IN_LIST formats)
-    add_library(${plugin_name}-vst3 MODULE ${sources})
+    set(_vst3_sources ${sources})
+    # Add RC file on Windows for font/image resources
+    set(_rc_file "${CMAKE_CURRENT_SOURCE_DIR}/resources/main.rc")
+    if(WIN32 AND EXISTS "${_rc_file}")
+      list(APPEND _vst3_sources "${_rc_file}")
+      if(MINGW)
+        set_source_files_properties("${_rc_file}" PROPERTIES
+          COMPILE_FLAGS "--use-temp-file -I \"${CMAKE_CURRENT_SOURCE_DIR}/resources/fonts\" -I \"${CMAKE_CURRENT_SOURCE_DIR}/resources/img\" -I \"${CMAKE_CURRENT_SOURCE_DIR}/resources\""
+        )
+      else()
+        set_source_files_properties("${_rc_file}" PROPERTIES
+          COMPILE_FLAGS "/I\"${CMAKE_CURRENT_SOURCE_DIR}/resources/fonts\" /I\"${CMAKE_CURRENT_SOURCE_DIR}/resources/img\" /I\"${CMAKE_CURRENT_SOURCE_DIR}/resources\""
+        )
+      endif()
+    endif()
+    add_library(${plugin_name}-vst3 MODULE ${_vst3_sources})
     iplug_add_target(${plugin_name}-vst3 PUBLIC
       LINK iPlug2::VST3 ${ui_lib} ${base_lib}
     )
@@ -135,7 +172,22 @@ function(_iplug_create_desktop_targets plugin_name formats sources ui_lib resour
 
   # CLAP (conditional on SDK availability)
   if("CLAP" IN_LIST formats AND IPLUG2_CLAP_SUPPORTED)
-    add_library(${plugin_name}-clap MODULE ${sources})
+    set(_clap_sources ${sources})
+    # Add RC file on Windows for font/image resources
+    set(_rc_file "${CMAKE_CURRENT_SOURCE_DIR}/resources/main.rc")
+    if(WIN32 AND EXISTS "${_rc_file}")
+      list(APPEND _clap_sources "${_rc_file}")
+      if(MINGW)
+        set_source_files_properties("${_rc_file}" PROPERTIES
+          COMPILE_FLAGS "--use-temp-file -I \"${CMAKE_CURRENT_SOURCE_DIR}/resources/fonts\" -I \"${CMAKE_CURRENT_SOURCE_DIR}/resources/img\" -I \"${CMAKE_CURRENT_SOURCE_DIR}/resources\""
+        )
+      else()
+        set_source_files_properties("${_rc_file}" PROPERTIES
+          COMPILE_FLAGS "/I\"${CMAKE_CURRENT_SOURCE_DIR}/resources/fonts\" /I\"${CMAKE_CURRENT_SOURCE_DIR}/resources/img\" /I\"${CMAKE_CURRENT_SOURCE_DIR}/resources\""
+        )
+      endif()
+    endif()
+    add_library(${plugin_name}-clap MODULE ${_clap_sources})
     iplug_add_target(${plugin_name}-clap PUBLIC
       LINK iPlug2::CLAP ${ui_lib} ${base_lib}
     )

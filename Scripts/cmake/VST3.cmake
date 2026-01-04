@@ -152,6 +152,7 @@ function(iplug_configure_vst3 target project_name)
     # Build directly into bundle structure
     # Set for all configs to avoid multi-config generator adding /Release/ etc
     set_target_properties(${target} PROPERTIES
+      PREFIX ""  # Remove "lib" prefix (MinGW default)
       OUTPUT_NAME "${project_name}"
       SUFFIX ".vst3"
       LIBRARY_OUTPUT_DIRECTORY "${VST3_OUTPUT_DIR}"

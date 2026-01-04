@@ -147,10 +147,20 @@ static BOOL CALLBACK EnumResNameProc(HMODULE module, LPCWSTR type, LPWSTR name, 
     if (search != nullptr && name != nullptr)
     {
       WDL_String searchName(search->mName);
+      WDL_String strippedName;
+      const char* nameUtf8 = UTF16AsUTF8(name).Get();
 
-      //strip off extra quotes
-      WDL_String strippedName((UTF16AsUTF8(name).Get() + 1));
-      strippedName.SetLen(strippedName.GetLength() - 1);
+      // MSVC rc.exe stores string resource names with quotes, MinGW windres does not
+      // Check if name starts with a quote and strip if present
+      if (nameUtf8[0] == '"')
+      {
+        strippedName.Set(nameUtf8 + 1);
+        strippedName.SetLen(strippedName.GetLength() - 1);
+      }
+      else
+      {
+        strippedName.Set(nameUtf8);
+      }
 
       // convert the stripped name to lower case (the search is already lower case)
       UTF16ToUTF8(strippedName, UTF8AsUTF16(strippedName).ToLowerCase().Get());

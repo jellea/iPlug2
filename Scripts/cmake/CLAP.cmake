@@ -93,6 +93,7 @@ function(iplug_configure_clap target project_name)
   if(WIN32)
     set(CLAP_OUTPUT_DIR "${CMAKE_BINARY_DIR}/out")
     set_target_properties(${target} PROPERTIES
+      PREFIX ""  # Remove "lib" prefix (MinGW default)
       OUTPUT_NAME "${project_name}"
       SUFFIX ".clap"
       LIBRARY_OUTPUT_DIRECTORY "${CLAP_OUTPUT_DIR}"

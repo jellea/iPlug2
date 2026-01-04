@@ -22,6 +22,15 @@
 #include <math.h>
 #include "IPlugPlatform.h"
 
+// Fallback definitions for M_PI and M_PI_2 if not provided by math.h
+// (e.g., when _USE_MATH_DEFINES is defined after first math.h include)
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+#ifndef M_PI_2
+#define M_PI_2 1.57079632679489661923
+#endif
+
 BEGIN_IPLUG_NAMESPACE
 
 // line y = x ^ 1/c;

@@ -17,6 +17,7 @@
 
 #include <array>
 #include <vector>
+#include <memory>
 #include <stdint.h>
 #include <functional>
 #include <bitset>

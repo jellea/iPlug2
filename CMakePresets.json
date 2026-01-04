@@ -141,6 +141,17 @@
       }
     },
     {
+      "name": "windows-mingw",
+      "displayName": "Windows MinGW (GCC)",
+      "description": "Windows x64 build with MinGW GCC and Ninja (NanoVG/GL2)",
+      "inherits": "base-windows",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
       "name": "windows-vs2022",
       "displayName": "Windows Visual Studio 2022",
       "description": "Windows x64 build with Visual Studio 2022 (NanoVG/GL2)",
@@ -230,6 +241,11 @@
         "-destination", "generic/platform=visionOS Simulator",
         "CODE_SIGNING_ALLOWED=NO"
       ]
+    },
+    {
+      "name": "windows-mingw",
+      "configurePreset": "windows-mingw",
+      "configuration": "Release"
     },
     {
       "name": "windows-vs2022",

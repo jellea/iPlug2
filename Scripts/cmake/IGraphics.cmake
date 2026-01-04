@@ -161,6 +161,9 @@ if(NOT TARGET iPlug2::IGraphics::NanoVG)
     target_link_libraries(iPlug2::IGraphics::NanoVG INTERFACE
       "-framework OpenGL"
     )
+  elseif(WIN32)
+    # Link OpenGL on Windows (MSVC uses #pragma comment, but MinGW needs explicit linking)
+    target_link_libraries(iPlug2::IGraphics::NanoVG INTERFACE opengl32)
   endif()
 
   target_link_libraries(iPlug2::IGraphics::NanoVG INTERFACE iPlug2::IGraphics)
