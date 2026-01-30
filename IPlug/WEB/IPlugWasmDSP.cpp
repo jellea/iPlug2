@@ -10,6 +10,7 @@
 
 #include "IPlugWasmDSP.h"
 
+#include <cassert>
 #include <emscripten.h>
 #include <emscripten/bind.h>
 
@@ -23,6 +24,8 @@ IPlugWasmDSP::IPlugWasmDSP(const InstanceInfo& info, const Config& config)
 : IPlugAPIBase(config, kAPIWAM) // Reuse WAM API type for compatibility
 , IPlugProcessor(config, kAPIWAM)
 {
+  // Only one instance supported per AudioWorklet context
+  assert(sInstance == nullptr && "IPlugWasmDSP: Multiple instances not supported");
   sInstance = this;
 
   int nInputs = MaxNChannels(ERoute::kInput);
@@ -30,6 +33,12 @@ IPlugWasmDSP::IPlugWasmDSP(const InstanceInfo& info, const Config& config)
 
   SetChannelConnections(ERoute::kInput, 0, nInputs, true);
   SetChannelConnections(ERoute::kOutput, 0, nOutputs, true);
+}
+
+IPlugWasmDSP::~IPlugWasmDSP()
+{
+  if (sInstance == this)
+    sInstance = nullptr;
 }
 
 void IPlugWasmDSP::Init(int sampleRate, int blockSize)
@@ -50,6 +59,12 @@ void IPlugWasmDSP::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
   AttachBuffers(ERoute::kInput, 0, NChannelsConnected(ERoute::kInput), inputs, nFrames);
   AttachBuffers(ERoute::kOutput, 0, NChannelsConnected(ERoute::kOutput), outputs, nFrames);
 
+  // ENTER_PARAMS_MUTEX/LEAVE_PARAMS_MUTEX: In single-threaded Emscripten builds
+  // (without pthreads), these are no-ops. With pthreads enabled, they protect
+  // parameter access during ProcessBuffers. The AudioWorklet runs on a separate
+  // thread from the main thread, but parameter messages arrive via postMessage
+  // which is serialized, so the mutex primarily guards against concurrent
+  // parameter changes from within ProcessBuffers itself (e.g., meta-parameters).
   ENTER_PARAMS_MUTEX
   ProcessBuffers(0.0f, nFrames);
   LEAVE_PARAMS_MUTEX

@@ -102,6 +102,45 @@ class NAME_PLACEHOLDERProcessor extends AudioWorkletProcessor {
     }
   }
 
+  /**
+   * Free allocated WASM memory buffers.
+   * Note: AudioWorkletProcessor has no destructor callback, so this must be
+   * called explicitly when the processor is no longer needed. In practice,
+   * the AudioWorkletGlobalScope is terminated when the AudioContext closes,
+   * which frees all WASM memory. This method is provided for explicit cleanup
+   * in long-running contexts where processors may be recreated.
+   */
+  _freeBuffers() {
+    const Module = this.Module;
+    if (!Module) return;
+
+    // Free input channel buffers
+    if (this.inputPtrs) {
+      for (const ptr of this.inputPtrs) {
+        if (ptr) Module._free(ptr);
+      }
+      this.inputPtrs = null;
+    }
+
+    // Free output channel buffers
+    if (this.outputPtrs) {
+      for (const ptr of this.outputPtrs) {
+        if (ptr) Module._free(ptr);
+      }
+      this.outputPtrs = null;
+    }
+
+    // Free pointer arrays
+    if (this.inputPtrArray) {
+      Module._free(this.inputPtrArray);
+      this.inputPtrArray = 0;
+    }
+    if (this.outputPtrArray) {
+      Module._free(this.outputPtrArray);
+      this.outputPtrArray = 0;
+    }
+  }
+
   _onMessage(e) {
     const msg = e.data;
 
@@ -151,6 +190,11 @@ class NAME_PLACEHOLDERProcessor extends AudioWorkletProcessor {
       case 'getPluginInfo':
         // Controller is requesting plugin info (in case it missed the initial broadcast)
         this._sendPluginInfo();
+        break;
+
+      case 'cleanup':
+        // Explicit cleanup request - free WASM buffers
+        this._freeBuffers();
         break;
     }
   }

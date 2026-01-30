@@ -35,7 +35,7 @@ class IPlugWasmDSP : public IPlugAPIBase
 {
 public:
   IPlugWasmDSP(const InstanceInfo& info, const Config& config);
-  virtual ~IPlugWasmDSP() = default;
+  virtual ~IPlugWasmDSP();
 
   /** Initialize the DSP processor
    * @param sampleRate The sample rate
