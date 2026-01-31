@@ -176,17 +176,34 @@ IPlugControls::IPlugControls(const InstanceInfo& info)
 
     pGraphics->AttachControl(new IVButtonControl(sameCell().SubRectVertical(3, 2), [pGraphics](IControl* pCaller){
       SplashClickActionFunc(pCaller);
-      static IPopupMenu menu {"Menu", {"one", "two", "three"}, [pCaller](IPopupMenu* pMenu) {
+      static IPopupMenu submenu1 {"Colors", {"Red", "Green", "Blue"}};
+      static IPopupMenu submenu2 {"Sizes", {"Small", "Medium", "Large"}};
+      static IPopupMenu nestedSub {"Deep", {"Level 3A", "Level 3B"}};
+      static IPopupMenu submenu3 {"More"};
+      static IPopupMenu menu {"Menu", {}, [pCaller](IPopupMenu* pMenu) {
           auto* itemChosen = pMenu->GetChosenItem();
           if(itemChosen)
             pCaller->As<IVButtonControl>()->SetValueStr(itemChosen->GetText());
         }
       };
-      
+      static bool menuInit = false;
+      if (!menuInit) {
+        submenu3.AddItem("Nested")->SetSubmenu(&nestedSub);
+        submenu3.AddItem("Other");
+        menu.AddItem("one");
+        menu.AddItem("Colors")->SetSubmenu(&submenu1);
+        menu.AddItem("two");
+        menu.AddSeparator();
+        menu.AddItem("Sizes")->SetSubmenu(&submenu2);
+        menu.AddItem("three");
+        menu.AddItem("More")->SetSubmenu(&submenu3);
+        menuInit = true;
+      }
+
       float x, y;
       pGraphics->GetMouseDownPoint(x, y);
       pGraphics->CreatePopupMenu(*pCaller, menu, x, y);
-      
+
     }, "", style.WithValueText(IText(24.f, EVAlign::Middle)), false, true), kNoTag, "vcontrols");
     pGraphics->GetControl(pGraphics->NControls()-1)->As<IVButtonControl>()->SetValueStr("one");
     
