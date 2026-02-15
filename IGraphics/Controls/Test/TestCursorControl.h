@@ -39,7 +39,7 @@ public:
   {
     mCursor++;
     
-    if (mCursor > static_cast<int>(ECursor::HELP))
+    if (mCursor > static_cast<int>(ECursor::GRABBING))
       mCursor = -1;
     
     GetUI()->SetMouseCursor((ECursor) std::max(0, mCursor));
@@ -77,6 +77,8 @@ private:
       case ECursor::HAND:         return "hand";
       case ECursor::APPSTARTING:  return "app starting";
       case ECursor::HELP:         return "help";
+      case ECursor::GRAB:         return "grab";
+      case ECursor::GRABBING:     return "grabbing";
     }
     
     return "";

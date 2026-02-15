@@ -187,7 +187,9 @@ enum class ECursor
   INO,
   HAND,
   APPSTARTING,
-  HELP
+  HELP,
+  GRAB,
+  GRABBING
 };
 
 /** Touch event states for multi-touch handling */

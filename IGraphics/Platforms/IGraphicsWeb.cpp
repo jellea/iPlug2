@@ -512,6 +512,8 @@ ECursor IGraphicsWeb::SetMouseCursor(ECursor cursorType)
     case ECursor::HAND:             cursor = "pointer";         break;
     case ECursor::APPSTARTING:      cursor = "progress";        break;
     case ECursor::HELP:             cursor = "help";            break;
+    case ECursor::GRAB:             cursor = "grab";            break;
+    case ECursor::GRABBING:         cursor = "grabbing";        break;
   }
   
   val::global("document")["body"]["style"].set("cursor", cursor);

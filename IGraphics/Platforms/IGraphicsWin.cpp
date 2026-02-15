@@ -910,6 +910,8 @@ ECursor IGraphicsWin::SetMouseCursor(ECursor cursorType)
     case ECursor::HAND:             cursor = LoadCursor(NULL, IDC_HAND);            break;
     case ECursor::APPSTARTING:      cursor = LoadCursor(NULL, IDC_APPSTARTING);     break;
     case ECursor::HELP:             cursor = LoadCursor(NULL, IDC_HELP);            break;
+    case ECursor::GRAB:             cursor = LoadCursor(NULL, IDC_SIZEALL);         break;
+    case ECursor::GRABBING:         cursor = LoadCursor(NULL, IDC_SIZEALL);         break;
     default:
       cursor = LoadCursor(NULL, IDC_ARROW);
   }

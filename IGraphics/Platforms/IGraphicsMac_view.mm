@@ -1106,6 +1106,8 @@ static void MakeCursorFromName(NSCursor*& cursor, const char *name)
         pCursor = [NSCursor performSelector:@selector(_helpCursor)];
       helpRequested = true;
       break;
+    case ECursor::GRAB: pCursor = [NSCursor openHandCursor]; break;
+    case ECursor::GRABBING: pCursor = [NSCursor closedHandCursor]; break;
     default: pCursor = [NSCursor arrowCursor]; break;
   }
 
