@@ -74,13 +74,15 @@ function(iplug_configure_auv2 target project_name)
       XCODE_ATTRIBUTE_GENERATE_PKGINFO_FILE "YES"
     )
 
-    # For non-Xcode generators (e.g., Ninja), create PkgInfo file manually
+    # For non-Xcode generators (e.g., Ninja), create PkgInfo and Info.plist manually
     if(NOT XCODE)
-      set(PKGINFO_PATH "${CMAKE_BINARY_DIR}/out/${project_name}.component/Contents/PkgInfo")
+      set(_component_contents "${CMAKE_BINARY_DIR}/out/${project_name}.component/Contents")
+      set(PKGINFO_PATH "${_component_contents}/PkgInfo")
       add_custom_command(TARGET ${target} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/out/${project_name}.component/Contents"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${_component_contents}"
         COMMAND ${CMAKE_COMMAND} -E copy "${IPLUG2_PKGINFO_FILE}" "${PKGINFO_PATH}"
-        COMMENT "Creating PkgInfo for ${project_name}.component"
+        COMMAND ${CMAKE_COMMAND} -E copy "${PLUG_RESOURCES_DIR}/${project_name}-AU-Info.plist" "${_component_contents}/Info.plist"
+        COMMENT "Creating PkgInfo and Info.plist for ${project_name}.component"
       )
     endif()
   endif()
