@@ -937,31 +937,6 @@ void IGraphicsWin::GetMouseLocation(float& x, float&y) const
   y = p.y / scale;
 }
 
-// Debug log helper - writes to %APPDATA%\iplug2_debug.log
-static void _IPlugDebugLog(const char* fmt, ...)
-{
-  char path[MAX_PATH];
-  if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, path)))
-  {
-    strcat_s(path, MAX_PATH, "\\iplug2_debug.log");
-    FILE* f = nullptr;
-    fopen_s(&f, path, "a");
-    if (f)
-    {
-      SYSTEMTIME st;
-      GetLocalTime(&st);
-      fprintf(f, "[%02d:%02d:%02d.%03d] ", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
-      va_list args;
-      va_start(args, fmt);
-      vfprintf(f, fmt, args);
-      va_end(args);
-      fprintf(f, "\n");
-      fflush(f);
-      fclose(f);
-    }
-  }
-}
-
 #ifdef IGRAPHICS_GL
 void IGraphicsWin::CreateGLContext()
 {
@@ -986,15 +961,10 @@ void IGraphicsWin::CreateGLContext()
   };
 
   HDC dc = GetDC(mPlugWnd);
-  _IPlugDebugLog("  GL: GetDC=%p mPlugWnd=%p", dc, mPlugWnd);
   int fmt = ChoosePixelFormat(dc, &pfd);
-  _IPlugDebugLog("  GL: ChoosePixelFormat=%d", fmt);
-  BOOL spf = SetPixelFormat(dc, fmt, &pfd);
-  _IPlugDebugLog("  GL: SetPixelFormat=%d err=%lu", (int)spf, GetLastError());
+  SetPixelFormat(dc, fmt, &pfd);
   mHGLRC = wglCreateContext(dc);
-  _IPlugDebugLog("  GL: wglCreateContext=%p err=%lu", mHGLRC, GetLastError());
-  BOOL mc = wglMakeCurrent(dc, mHGLRC);
-  _IPlugDebugLog("  GL: wglMakeCurrent=%d err=%lu", (int)mc, GetLastError());
+  wglMakeCurrent(dc, mHGLRC);
 
 #ifdef IGRAPHICS_GL3
   // On windows we can't create a 3.3 context directly, since we need the wglCreateContextAttribsARB extension.
@@ -1019,10 +989,11 @@ void IGraphicsWin::CreateGLContext()
 #endif
 
   int gladResult = gladLoadGL();
-  _IPlugDebugLog("  GL: gladLoadGL=%d", gladResult);
-  if (!gladResult)
+
+  if (!gladResult || GLVersion.major < 2)
   {
-    _IPlugDebugLog("  GL: gladLoadGL FAILED - destroying GL context");
+    // NanoVG requires at least OpenGL 2.0 for shaders. The Microsoft GDI Generic
+    // software renderer only provides GL 1.1, causing null function pointers.
     wglMakeCurrent(NULL, NULL);
     wglDeleteContext(mHGLRC);
     mHGLRC = NULL;
@@ -1074,8 +1045,6 @@ EMsgBoxResult IGraphicsWin::ShowMessageBox(const char* str, const char* title, E
 
 void* IGraphicsWin::OpenWindow(void* pParent)
 {
-  _IPlugDebugLog("OpenWindow START pParent=%p mHInstance=%p", pParent, mHInstance);
-
   mParentWnd = (HWND) pParent;
   int screenScale = GetScaleForHWND(mParentWnd);
   int x = 0, y = 0, w = WindowWidth() * screenScale, h = WindowHeight() * screenScale;
@@ -1095,67 +1064,28 @@ void* IGraphicsWin::OpenWindow(void* pParent)
   if (nWndClassReg++ == 0)
   {
     WNDCLASSW wndClass = { CS_DBLCLKS | CS_OWNDC, WndProc, 0, 0, mHInstance, 0, 0, 0, 0, wndClassName };
-    ATOM cls = RegisterClassW(&wndClass);
-    _IPlugDebugLog("RegisterClassW result=%d err=%lu", (int)cls, GetLastError());
+    RegisterClassW(&wndClass);
   }
 
   mPlugWnd = CreateWindowW(wndClassName, L"IPlug", WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, x, y, w, h, mParentWnd, 0, mHInstance, this);
-  _IPlugDebugLog("CreateWindowW result=%p err=%lu", mPlugWnd, GetLastError());
 
   HDC dc = GetDC(mPlugWnd);
   SetPlatformContext(dc);
   ReleaseDC(mPlugWnd, dc);
 
 #ifdef IGRAPHICS_GL
-  _IPlugDebugLog("CreateGLContext START");
   CreateGLContext();
-  _IPlugDebugLog("CreateGLContext DONE mHGLRC=%p", mHGLRC);
   if (!mHGLRC)
   {
-    _IPlugDebugLog("GL context failed - aborting OpenWindow");
     return mPlugWnd;
   }
 #endif
 
-  // Verify GL context is still current and function pointers are loaded
-#ifdef IGRAPHICS_GL
-  {
-    HGLRC curCtx = wglGetCurrentContext();
-    HDC curDC = wglGetCurrentDC();
-    _IPlugDebugLog("Pre-NVG: wglGetCurrentContext=%p wglGetCurrentDC=%p", curCtx, curDC);
-
-    const char* glVersion = (const char*)glGetString(GL_VERSION);
-    const char* glRenderer = (const char*)glGetString(GL_RENDERER);
-    const char* glVendor = (const char*)glGetString(GL_VENDOR);
-    _IPlugDebugLog("Pre-NVG: GL_VERSION=%s", glVersion ? glVersion : "(null)");
-    _IPlugDebugLog("Pre-NVG: GL_RENDERER=%s", glRenderer ? glRenderer : "(null)");
-    _IPlugDebugLog("Pre-NVG: GL_VENDOR=%s", glVendor ? glVendor : "(null)");
-
-    _IPlugDebugLog("Pre-NVG func ptrs: glCreateProgram=%p glCreateShader=%p glShaderSource=%p",
-      (void*)glad_glCreateProgram, (void*)glad_glCreateShader, (void*)glad_glShaderSource);
-    _IPlugDebugLog("Pre-NVG func ptrs: glCompileShader=%p glGetShaderiv=%p glAttachShader=%p",
-      (void*)glad_glCompileShader, (void*)glad_glGetShaderiv, (void*)glad_glAttachShader);
-    _IPlugDebugLog("Pre-NVG func ptrs: glLinkProgram=%p glBindAttribLocation=%p glGetProgramiv=%p",
-      (void*)glad_glLinkProgram, (void*)glad_glBindAttribLocation, (void*)glad_glGetProgramiv);
-    _IPlugDebugLog("Pre-NVG func ptrs: glGenBuffers=%p glGenTextures=%p glGetError=%p",
-      (void*)glad_glGenBuffers, (void*)glad_glGenTextures, (void*)glad_glGetError);
-    _IPlugDebugLog("Pre-NVG func ptrs: glGetUniformLocation=%p glBindTexture=%p glTexImage2D=%p",
-      (void*)glad_glGetUniformLocation, (void*)glad_glBindTexture, (void*)glad_glTexImage2D);
-    _IPlugDebugLog("Pre-NVG func ptrs: glTexParameteri=%p glPixelStorei=%p glFinish=%p",
-      (void*)glad_glTexParameteri, (void*)glad_glPixelStorei, (void*)glad_glFinish);
-  }
-#endif
-
-  _IPlugDebugLog("OnViewInitialized START");
   OnViewInitialized((void*) dc);
-  _IPlugDebugLog("OnViewInitialized DONE");
 
   SetScreenScale(screenScale); // resizes draw context
-  _IPlugDebugLog("SetScreenScale DONE scale=%d", screenScale);
 
-  _IPlugDebugLog("LayoutUI START");
   GetDelegate()->LayoutUI(this);
-  _IPlugDebugLog("LayoutUI DONE");
 
   if (MultiTouchEnabled() && GetSystemMetrics(SM_DIGITIZER) & NID_MULTI_INPUT)
   {

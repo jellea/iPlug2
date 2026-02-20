@@ -454,18 +454,10 @@ void IGraphicsNanoVG::ApplyShadowMask(ILayerPtr& layer, RawBitmapData& mask, con
 
 void IGraphicsNanoVG::OnViewInitialized(void* pContext)
 {
-#if defined(OS_WIN) && defined(IGRAPHICS_GL)
-  _IPlugDebugLog("  NanoVG: calling nvgCreateContext (GL2)");
-#endif
-
 #if defined IGRAPHICS_METAL
   mVG = nvgCreateContext(pContext, NVG_ANTIALIAS | NVG_TRIPLE_BUFFER); //TODO: NVG_STENCIL_STROKES currently has issues
 #else
   mVG = nvgCreateContext(NVG_ANTIALIAS /*| NVG_STENCIL_STROKES*/);
-#endif
-
-#if defined(OS_WIN) && defined(IGRAPHICS_GL)
-  _IPlugDebugLog("  NanoVG: nvgCreateContext returned mVG=%p", mVG);
 #endif
 
   if (mVG == nullptr)
