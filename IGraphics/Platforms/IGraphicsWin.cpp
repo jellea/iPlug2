@@ -961,10 +961,15 @@ void IGraphicsWin::CreateGLContext()
   };
 
   HDC dc = GetDC(mPlugWnd);
+  _IPlugDebugLog("  GL: GetDC=%p mPlugWnd=%p", dc, mPlugWnd);
   int fmt = ChoosePixelFormat(dc, &pfd);
-  SetPixelFormat(dc, fmt, &pfd);
+  _IPlugDebugLog("  GL: ChoosePixelFormat=%d", fmt);
+  BOOL spf = SetPixelFormat(dc, fmt, &pfd);
+  _IPlugDebugLog("  GL: SetPixelFormat=%d err=%lu", (int)spf, GetLastError());
   mHGLRC = wglCreateContext(dc);
-  wglMakeCurrent(dc, mHGLRC);
+  _IPlugDebugLog("  GL: wglCreateContext=%p err=%lu", mHGLRC, GetLastError());
+  BOOL mc = wglMakeCurrent(dc, mHGLRC);
+  _IPlugDebugLog("  GL: wglMakeCurrent=%d err=%lu", (int)mc, GetLastError());
 
 #ifdef IGRAPHICS_GL3
   // On windows we can't create a 3.3 context directly, since we need the wglCreateContextAttribsARB extension.
@@ -988,8 +993,9 @@ void IGraphicsWin::CreateGLContext()
 
 #endif
 
-  //TODO: return false if GL init fails?
-  if (!gladLoadGL())
+  int gladResult = gladLoadGL();
+  _IPlugDebugLog("  GL: gladLoadGL=%d", gladResult);
+  if (!gladResult)
     DBGMSG("Error initializing glad");
 
   glGetError();
@@ -1034,8 +1040,35 @@ EMsgBoxResult IGraphicsWin::ShowMessageBox(const char* str, const char* title, E
   return result;
 }
 
+// Debug log helper - writes to %APPDATA%\iplug2_debug.log
+static void _IPlugDebugLog(const char* fmt, ...)
+{
+  char path[MAX_PATH];
+  if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, path)))
+  {
+    strcat_s(path, MAX_PATH, "\\iplug2_debug.log");
+    FILE* f = nullptr;
+    fopen_s(&f, path, "a");
+    if (f)
+    {
+      SYSTEMTIME st;
+      GetLocalTime(&st);
+      fprintf(f, "[%02d:%02d:%02d.%03d] ", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+      va_list args;
+      va_start(args, fmt);
+      vfprintf(f, fmt, args);
+      va_end(args);
+      fprintf(f, "\n");
+      fflush(f);
+      fclose(f);
+    }
+  }
+}
+
 void* IGraphicsWin::OpenWindow(void* pParent)
 {
+  _IPlugDebugLog("OpenWindow START pParent=%p mHInstance=%p", pParent, mHInstance);
+
   mParentWnd = (HWND) pParent;
   int screenScale = GetScaleForHWND(mParentWnd);
   int x = 0, y = 0, w = WindowWidth() * screenScale, h = WindowHeight() * screenScale;
@@ -1055,24 +1088,33 @@ void* IGraphicsWin::OpenWindow(void* pParent)
   if (nWndClassReg++ == 0)
   {
     WNDCLASSW wndClass = { CS_DBLCLKS | CS_OWNDC, WndProc, 0, 0, mHInstance, 0, 0, 0, 0, wndClassName };
-    RegisterClassW(&wndClass);
+    ATOM cls = RegisterClassW(&wndClass);
+    _IPlugDebugLog("RegisterClassW result=%d err=%lu", (int)cls, GetLastError());
   }
 
   mPlugWnd = CreateWindowW(wndClassName, L"IPlug", WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, x, y, w, h, mParentWnd, 0, mHInstance, this);
+  _IPlugDebugLog("CreateWindowW result=%p err=%lu", mPlugWnd, GetLastError());
 
   HDC dc = GetDC(mPlugWnd);
   SetPlatformContext(dc);
   ReleaseDC(mPlugWnd, dc);
 
 #ifdef IGRAPHICS_GL
+  _IPlugDebugLog("CreateGLContext START");
   CreateGLContext();
+  _IPlugDebugLog("CreateGLContext DONE mHGLRC=%p", mHGLRC);
 #endif
 
+  _IPlugDebugLog("OnViewInitialized START");
   OnViewInitialized((void*) dc);
+  _IPlugDebugLog("OnViewInitialized DONE");
 
   SetScreenScale(screenScale); // resizes draw context
+  _IPlugDebugLog("SetScreenScale DONE scale=%d", screenScale);
 
+  _IPlugDebugLog("LayoutUI START");
   GetDelegate()->LayoutUI(this);
+  _IPlugDebugLog("LayoutUI DONE");
 
   if (MultiTouchEnabled() && GetSystemMetrics(SM_DIGITIZER) & NID_MULTI_INPUT)
   {
@@ -1113,8 +1155,10 @@ void* IGraphicsWin::OpenWindow(void* pParent)
 #endif
   }
 
+  _IPlugDebugLog("OnUIOpen START");
   GetDelegate()->OnUIOpen();
-  
+  _IPlugDebugLog("OpenWindow DONE mPlugWnd=%p", mPlugWnd);
+
   return mPlugWnd;
 }
 
