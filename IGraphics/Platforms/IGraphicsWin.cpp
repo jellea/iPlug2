@@ -937,6 +937,31 @@ void IGraphicsWin::GetMouseLocation(float& x, float&y) const
   y = p.y / scale;
 }
 
+// Debug log helper - writes to %APPDATA%\iplug2_debug.log
+static void _IPlugDebugLog(const char* fmt, ...)
+{
+  char path[MAX_PATH];
+  if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, path)))
+  {
+    strcat_s(path, MAX_PATH, "\\iplug2_debug.log");
+    FILE* f = nullptr;
+    fopen_s(&f, path, "a");
+    if (f)
+    {
+      SYSTEMTIME st;
+      GetLocalTime(&st);
+      fprintf(f, "[%02d:%02d:%02d.%03d] ", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+      va_list args;
+      va_start(args, fmt);
+      vfprintf(f, fmt, args);
+      va_end(args);
+      fprintf(f, "\n");
+      fflush(f);
+      fclose(f);
+    }
+  }
+}
+
 #ifdef IGRAPHICS_GL
 void IGraphicsWin::CreateGLContext()
 {
@@ -996,7 +1021,14 @@ void IGraphicsWin::CreateGLContext()
   int gladResult = gladLoadGL();
   _IPlugDebugLog("  GL: gladLoadGL=%d", gladResult);
   if (!gladResult)
-    DBGMSG("Error initializing glad");
+  {
+    _IPlugDebugLog("  GL: gladLoadGL FAILED - destroying GL context");
+    wglMakeCurrent(NULL, NULL);
+    wglDeleteContext(mHGLRC);
+    mHGLRC = NULL;
+    ReleaseDC(mPlugWnd, dc);
+    return;
+  }
 
   glGetError();
 
@@ -1040,31 +1072,6 @@ EMsgBoxResult IGraphicsWin::ShowMessageBox(const char* str, const char* title, E
   return result;
 }
 
-// Debug log helper - writes to %APPDATA%\iplug2_debug.log
-static void _IPlugDebugLog(const char* fmt, ...)
-{
-  char path[MAX_PATH];
-  if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, path)))
-  {
-    strcat_s(path, MAX_PATH, "\\iplug2_debug.log");
-    FILE* f = nullptr;
-    fopen_s(&f, path, "a");
-    if (f)
-    {
-      SYSTEMTIME st;
-      GetLocalTime(&st);
-      fprintf(f, "[%02d:%02d:%02d.%03d] ", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
-      va_list args;
-      va_start(args, fmt);
-      vfprintf(f, fmt, args);
-      va_end(args);
-      fprintf(f, "\n");
-      fflush(f);
-      fclose(f);
-    }
-  }
-}
-
 void* IGraphicsWin::OpenWindow(void* pParent)
 {
   _IPlugDebugLog("OpenWindow START pParent=%p mHInstance=%p", pParent, mHInstance);
@@ -1103,6 +1110,11 @@ void* IGraphicsWin::OpenWindow(void* pParent)
   _IPlugDebugLog("CreateGLContext START");
   CreateGLContext();
   _IPlugDebugLog("CreateGLContext DONE mHGLRC=%p", mHGLRC);
+  if (!mHGLRC)
+  {
+    _IPlugDebugLog("GL context failed - aborting OpenWindow");
+    return mPlugWnd;
+  }
 #endif
 
   _IPlugDebugLog("OnViewInitialized START");
