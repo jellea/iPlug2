@@ -1126,9 +1126,7 @@ void* IGraphicsWin::OpenWindow(void* pParent)
 #endif
   }
 
-  _IPlugDebugLog("OnUIOpen START");
   GetDelegate()->OnUIOpen();
-  _IPlugDebugLog("OpenWindow DONE mPlugWnd=%p", mPlugWnd);
 
   return mPlugWnd;
 }
