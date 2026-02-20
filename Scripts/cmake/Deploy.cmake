@@ -13,6 +13,8 @@
 # Options
 #------------------------------------------------------------------------
 option(IPLUG_DEPLOY_PLUGINS "Deploy built plugins to system directories" ON)
+option(IPLUG_CODESIGN "Code sign deployed plugins (macOS only)" OFF)
+set(IPLUG_CODESIGN_IDENTITY "" CACHE STRING "Code signing identity (e.g. 'Developer ID Application: Name (TEAMID)')")
 
 set(IPLUG_DEPLOY_METHOD "COPY" CACHE STRING "Deployment method: SYMLINK or COPY")
 set_property(CACHE IPLUG_DEPLOY_METHOD PROPERTY STRINGS "SYMLINK" "COPY")
@@ -257,6 +259,20 @@ function(iplug_deploy_target target format project_name)
   else()
     # Default to SYMLINK
     _iplug_create_plugin_link(${target} "${source_path}" "${deploy_path}" "${plugin_name}")
+  endif()
+
+  # Code sign after deployment (macOS only)
+  if(APPLE AND IPLUG_CODESIGN AND NOT "${IPLUG_CODESIGN_IDENTITY}" STREQUAL "")
+    set(deployed_path "${deploy_path}/${plugin_name}")
+    set(codesign_script "${CMAKE_BINARY_DIR}/codesign_${target}.sh")
+    file(WRITE "${codesign_script}"
+      "#!/bin/bash\ncodesign --force --deep --strict --options=runtime -s '${IPLUG_CODESIGN_IDENTITY}' '${deployed_path}'\n")
+    file(CHMOD "${codesign_script}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+    add_custom_command(TARGET ${target} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E echo "[iPlug2] Code signing: ${deployed_path}"
+      COMMAND "${codesign_script}"
+      COMMENT "[iPlug2] Code signing ${plugin_name}"
+    )
   endif()
 endfunction()
 
