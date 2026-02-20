@@ -438,14 +438,29 @@ static int glnvg__createShader(GLNVGshader* shader, const char* name, const char
 
 	memset(shader, 0, sizeof(*shader));
 
+#if defined(OS_WIN) && defined(NANOVG_GL2)
+	_IPlugDebugLog("      createShader: calling glCreateProgram (ptr=%p)", (void*)glad_glCreateProgram);
+#endif
 	prog = glCreateProgram();
+#if defined(OS_WIN) && defined(NANOVG_GL2)
+	_IPlugDebugLog("      createShader: prog=%u, calling glCreateShader (ptr=%p)", prog, (void*)glad_glCreateShader);
+#endif
 	vert = glCreateShader(GL_VERTEX_SHADER);
+#if defined(OS_WIN) && defined(NANOVG_GL2)
+	_IPlugDebugLog("      createShader: vert=%u", vert);
+#endif
 	frag = glCreateShader(GL_FRAGMENT_SHADER);
+#if defined(OS_WIN) && defined(NANOVG_GL2)
+	_IPlugDebugLog("      createShader: frag=%u, calling glShaderSource", frag);
+#endif
 	str[2] = vshader;
 	glShaderSource(vert, 3, str, 0);
 	str[2] = fshader;
 	glShaderSource(frag, 3, str, 0);
 
+#if defined(OS_WIN) && defined(NANOVG_GL2)
+	_IPlugDebugLog("      createShader: compiling vertex shader");
+#endif
 	glCompileShader(vert);
 	glGetShaderiv(vert, GL_COMPILE_STATUS, &status);
 	if (status != GL_TRUE) {
@@ -508,6 +523,10 @@ static int glnvg__renderCreate(void* uptr)
 {
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
 	int align = 4;
+
+#if defined(OS_WIN) && defined(NANOVG_GL2)
+	_IPlugDebugLog("    glnvg__renderCreate ENTER gl=%p flags=%d", gl, gl ? gl->flags : -1);
+#endif
 
 	// TODO: mediump float may not be enough for GLES2 in iOS.
 	// see the following discussion: https://github.com/memononen/nanovg/issues/46
@@ -679,6 +698,10 @@ static int glnvg__renderCreate(void* uptr)
 
 	glnvg__checkError(gl, "init");
 
+#if defined(OS_WIN) && defined(NANOVG_GL2)
+	_IPlugDebugLog("    glnvg__renderCreate: calling glnvg__createShader");
+#endif
+
 	if (gl->flags & NVG_ANTIALIAS) {
 		if (glnvg__createShader(&gl->shader, "shader", shaderHeader, "#define EDGE_AA 1\n", fillVertShader, fillFragShader) == 0)
 			return 0;
@@ -687,8 +710,16 @@ static int glnvg__renderCreate(void* uptr)
 			return 0;
 	}
 
+#if defined(OS_WIN) && defined(NANOVG_GL2)
+	_IPlugDebugLog("    glnvg__renderCreate: shader created prog=%u", gl->shader.prog);
+#endif
+
 	glnvg__checkError(gl, "uniform locations");
 	glnvg__getUniforms(&gl->shader);
+
+#if defined(OS_WIN) && defined(NANOVG_GL2)
+	_IPlugDebugLog("    glnvg__renderCreate: uniforms done, calling glGenBuffers");
+#endif
 
 	// Create dynamic vertex array
 #if defined NANOVG_GL3
@@ -704,13 +735,25 @@ static int glnvg__renderCreate(void* uptr)
 #endif
 	gl->fragSize = sizeof(GLNVGfragUniforms) + align - sizeof(GLNVGfragUniforms) % align;
 
+#if defined(OS_WIN) && defined(NANOVG_GL2)
+	_IPlugDebugLog("    glnvg__renderCreate: creating dummy texture");
+#endif
+
 	// Some platforms does not allow to have samples to unset textures.
 	// Create empty one which is bound when there's no texture specified.
 	gl->dummyTex = glnvg__renderCreateTexture(gl, NVG_TEXTURE_ALPHA, 1, 1, 0, NULL);
 
 	glnvg__checkError(gl, "create done");
 
+#if defined(OS_WIN) && defined(NANOVG_GL2)
+	_IPlugDebugLog("    glnvg__renderCreate: calling glFinish");
+#endif
+
 	glFinish();
+
+#if defined(OS_WIN) && defined(NANOVG_GL2)
+	_IPlugDebugLog("    glnvg__renderCreate: DONE success");
+#endif
 
 	return 1;
 }

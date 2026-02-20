@@ -1117,6 +1117,35 @@ void* IGraphicsWin::OpenWindow(void* pParent)
   }
 #endif
 
+  // Verify GL context is still current and function pointers are loaded
+#ifdef IGRAPHICS_GL
+  {
+    HGLRC curCtx = wglGetCurrentContext();
+    HDC curDC = wglGetCurrentDC();
+    _IPlugDebugLog("Pre-NVG: wglGetCurrentContext=%p wglGetCurrentDC=%p", curCtx, curDC);
+
+    const char* glVersion = (const char*)glGetString(GL_VERSION);
+    const char* glRenderer = (const char*)glGetString(GL_RENDERER);
+    const char* glVendor = (const char*)glGetString(GL_VENDOR);
+    _IPlugDebugLog("Pre-NVG: GL_VERSION=%s", glVersion ? glVersion : "(null)");
+    _IPlugDebugLog("Pre-NVG: GL_RENDERER=%s", glRenderer ? glRenderer : "(null)");
+    _IPlugDebugLog("Pre-NVG: GL_VENDOR=%s", glVendor ? glVendor : "(null)");
+
+    _IPlugDebugLog("Pre-NVG func ptrs: glCreateProgram=%p glCreateShader=%p glShaderSource=%p",
+      (void*)glad_glCreateProgram, (void*)glad_glCreateShader, (void*)glad_glShaderSource);
+    _IPlugDebugLog("Pre-NVG func ptrs: glCompileShader=%p glGetShaderiv=%p glAttachShader=%p",
+      (void*)glad_glCompileShader, (void*)glad_glGetShaderiv, (void*)glad_glAttachShader);
+    _IPlugDebugLog("Pre-NVG func ptrs: glLinkProgram=%p glBindAttribLocation=%p glGetProgramiv=%p",
+      (void*)glad_glLinkProgram, (void*)glad_glBindAttribLocation, (void*)glad_glGetProgramiv);
+    _IPlugDebugLog("Pre-NVG func ptrs: glGenBuffers=%p glGenTextures=%p glGetError=%p",
+      (void*)glad_glGenBuffers, (void*)glad_glGenTextures, (void*)glad_glGetError);
+    _IPlugDebugLog("Pre-NVG func ptrs: glGetUniformLocation=%p glBindTexture=%p glTexImage2D=%p",
+      (void*)glad_glGetUniformLocation, (void*)glad_glBindTexture, (void*)glad_glTexImage2D);
+    _IPlugDebugLog("Pre-NVG func ptrs: glTexParameteri=%p glPixelStorei=%p glFinish=%p",
+      (void*)glad_glTexParameteri, (void*)glad_glPixelStorei, (void*)glad_glFinish);
+  }
+#endif
+
   _IPlugDebugLog("OnViewInitialized START");
   OnViewInitialized((void*) dc);
   _IPlugDebugLog("OnViewInitialized DONE");
